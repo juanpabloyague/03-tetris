@@ -1,0 +1,69 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Analizar issue con Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowed-tools Bash(gh issue *)'
+          prompt: |
+            Analiza el siguiente issue de GitHub en el contexto de este repositorio (un juego de Tetris en JavaScript vanilla con Canvas HTML5).
+
+            Issue #${{ github.event.issue.number }}
+            Título: ${{ github.event.issue.title }}
+            Cuerpo:
+            ${{ github.event.issue.body }}
+
+            Tu tarea es:
+
+            1. **Asignar labels apropiados** al issue usando `gh issue edit ${{ github.event.issue.number }} --add-label "<label>"`.
+               Elige únicamente de estos labels existentes (créalos si no existen con `gh label create`):
+               - `bug` — algo no funciona correctamente
+               - `enhancement` — nueva funcionalidad o mejora
+               - `question` — duda o consulta
+               - `performance` — problemas de rendimiento o velocidad
+               - `ui` — problemas visuales o de interfaz
+               - `gameplay` — mecánicas de juego (colisiones, rotaciones, puntuación, nivel, etc.)
+               - `documentation` — mejoras o errores en documentación
+               - `good first issue` — tarea sencilla apta para principiantes
+
+               Puedes asignar más de un label si aplica. Asegúrate de que los labels existen antes de asignarlos; créalos con `gh label create "<nombre>" --color "<hex>"` si es necesario.
+
+            2. **Publicar un comentario de diagnóstico** en el issue usando `gh issue comment ${{ github.event.issue.number }} --body "<texto>"`.
+               El comentario debe estar en español e incluir las siguientes secciones en Markdown:
+
+               ### Diagnóstico del Issue
+
+               **Tipo de problema:** (bug / mejora / pregunta / otro)
+
+               **Área afectada:** (indicar qué parte del juego o del código se ve involucrada: lógica de tablero, piezas, rotación, colisiones, puntuación, nivel, renderizado, controles, UI, etc.)
+
+               **Descripción del problema:**
+               Resumen claro del problema o solicitud en 2-4 oraciones.
+
+               **Análisis técnico:**
+               Señala los archivos y funciones de `game.js` o `index.html` que probablemente estén involucrados, con una breve explicación de por qué.
+
+               **Sugerencias de implementación:**
+               Pasos o enfoques concretos que un desarrollador debería seguir para resolver o implementar lo solicitado. Sé específico respecto a la arquitectura del proyecto (vanilla JS, Canvas, sin módulos, sin build).
+
+               **Complejidad estimada:** (Baja / Media / Alta) con una justificación de una línea.
+
+            No hagas ninguna modificación al código. Solo asigna labels y publica el comentario de diagnóstico.

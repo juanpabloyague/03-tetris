@@ -48,7 +48,63 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+        <div id="overlay-save-form" class="save-form hidden">
+          <label class="label" for="overlay-name-input">Tu nombre</label>
+          <input type="text" id="overlay-name-input" maxlength="12" autocomplete="off" placeholder="JUGADOR" />
+          <button id="save-record-btn" type="button">Guardar</button>
+        </div>
+
+        <section class="records-panel" id="records-panel-overlay">
+          <h2 class="records-title">RECORDS</h2>
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Score</th>
+                <th>Líneas</th>
+                <th>Nivel</th>
+              </tr>
+            </thead>
+            <tbody class="records-tbody"></tbody>
+          </table>
+          <div class="records-stats">
+            <span>Mejor combo: <strong class="records-best-combo">0</strong></span>
+            <span>Máx. líneas de una vez: <strong class="records-best-lineas">0</strong></span>
+          </div>
+          <button class="clear-records-btn" type="button">Borrar records</button>
+        </section>
+
         <button id="restart-btn">Reiniciar</button>
+      </div>
+    </div>
+
+    <div id="start-screen" class="overlay">
+      <div class="overlay-box start-box">
+        <p class="start-subtitle">Consigue tu mejor puntuación</p>
+
+        <section class="records-panel" id="records-panel">
+          <h2 class="records-title">RECORDS</h2>
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Score</th>
+                <th>Líneas</th>
+                <th>Nivel</th>
+              </tr>
+            </thead>
+            <tbody class="records-tbody"></tbody>
+          </table>
+          <div class="records-stats">
+            <span>Mejor combo: <strong class="records-best-combo">0</strong></span>
+            <span>Máx. líneas de una vez: <strong class="records-best-lineas">0</strong></span>
+          </div>
+          <button class="clear-records-btn" type="button">Borrar records</button>
+        </section>
+
+        <button id="play-btn" type="button">Jugar</button>
       </div>
     </div>
   </div>

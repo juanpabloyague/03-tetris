@@ -106,7 +106,7 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = startLevel + Math.floor(lines / 10);
+    level = activeStartLevel + Math.floor(lines / 10);
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
   }
@@ -270,11 +270,12 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = startLevel;
+  activeStartLevel = startLevel;
+  level = activeStartLevel;
   paused = false;
   gameOver = false;
   menuOpen = false;
-  dropInterval = Math.max(100, 1000 - (startLevel - 1) * 90);
+  dropInterval = Math.max(100, 1000 - (activeStartLevel - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
@@ -297,7 +298,9 @@ const menuBackBtn = document.getElementById('menu-back-btn');
 const menuLevelSelect = document.getElementById('menu-level-select');
 
 let startLevel = 1;
+let activeStartLevel = startLevel;
 let menuOpen = false;
+let menuView = 'main';
 
 for (let i = 1; i <= 15; i++) {
   const opt = document.createElement('option');
@@ -312,6 +315,7 @@ menuLevelSelect.addEventListener('change', () => {
 });
 
 function showMenuView(view) {
+  menuView = view;
   menuMain.classList.toggle('hidden', view !== 'main');
   menuControlsView.classList.toggle('hidden', view !== 'controls');
   (view === 'main' ? menuResumeBtn : menuBackBtn).focus();
@@ -323,8 +327,14 @@ function togglePauseMenu() {
 }
 
 function menuFocusables() {
-  const view = menuControlsView.classList.contains('hidden') ? menuMain : menuControlsView;
+  const view = menuView === 'controls' ? menuControlsView : menuMain;
   return Array.from(view.querySelectorAll('button, select'));
+}
+
+function stepLevelSelect(dir) {
+  const newVal = Math.min(15, Math.max(1, parseInt(menuLevelSelect.value, 10) + dir));
+  menuLevelSelect.value = String(newVal);
+  startLevel = newVal;
 }
 
 menuResumeBtn.addEventListener('click', resumeGame);
@@ -342,9 +352,13 @@ document.addEventListener('keydown', e => {
   if (menuOpen) {
     if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
       e.preventDefault();
+      const dir = e.code === 'ArrowDown' ? 1 : -1;
+      if (document.activeElement === menuLevelSelect) {
+        stepLevelSelect(dir);
+        return;
+      }
       const focusables = menuFocusables();
       const idx = focusables.indexOf(document.activeElement);
-      const dir = e.code === 'ArrowDown' ? 1 : -1;
       const nextIdx = idx === -1 ? 0 : (idx + dir + focusables.length) % focusables.length;
       focusables[nextIdx].focus();
       return;

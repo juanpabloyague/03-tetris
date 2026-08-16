@@ -159,18 +159,13 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
-  context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
+  const theme = THEMES[currentSkin] || THEMES.retro;
+  theme.dibujarBloque(context, x, y, colorIndex, size, alpha ?? 1);
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  const theme = THEMES[currentSkin] || THEMES.retro;
+  ctx.strokeStyle = theme.colorGrid;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -280,7 +275,174 @@ function init() {
   animId = requestAnimationFrame(loop);
 }
 
+// ---- Temas visuales / skins ----
+
+function aclararColor(hex, cantidad) {
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num >> 16) + cantidad;
+  let g = ((num >> 8) & 0xff) + cantidad;
+  let b = (num & 0xff) + cantidad;
+  r = Math.max(0, Math.min(255, r));
+  g = Math.max(0, Math.min(255, g));
+  b = Math.max(0, Math.min(255, b));
+  return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+}
+
+const PALETA_NEON = [
+  null,
+  '#00e5ff',
+  '#fff176',
+  '#e040fb',
+  '#69f0ae',
+  '#ff5252',
+  '#536dfe',
+  '#ffab40',
+];
+
+const PALETA_PASTEL = [
+  null,
+  '#b3e5fc',
+  '#fff9c4',
+  '#e1bee7',
+  '#c8e6c9',
+  '#ffcdd2',
+  '#c5cae9',
+  '#ffe0b2',
+];
+
+const PALETA_PIXEL = [
+  null,
+  '#26c6da',
+  '#fdd835',
+  '#ab47bc',
+  '#66bb6a',
+  '#ef5350',
+  '#5c6bc0',
+  '#ffa726',
+];
+
+const THEMES = {
+  retro: {
+    nombre: 'Retro',
+    colores: COLORS,
+    colorGrid: '#22222e',
+    colorFondo: '#1a1a25',
+    dibujarBloque(context, x, y, colorIndex, size, alpha) {
+      const color = this.colores[colorIndex];
+      context.globalAlpha = alpha;
+      context.fillStyle = color;
+      context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+      // brillo superior
+      context.fillStyle = 'rgba(255,255,255,0.12)';
+      context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+      context.globalAlpha = 1;
+    },
+  },
+  neon: {
+    nombre: 'Neon',
+    colores: PALETA_NEON,
+    colorGrid: '#1a1a2e',
+    colorFondo: '#000000',
+    dibujarBloque(context, x, y, colorIndex, size, alpha) {
+      const color = this.colores[colorIndex];
+      const px = x * size + 2, py = y * size + 2, s = size - 4;
+      context.globalAlpha = alpha;
+      context.shadowBlur = 12;
+      context.shadowColor = color;
+      context.fillStyle = aclararColor(color, -60);
+      context.fillRect(px, py, s, s);
+      context.lineWidth = 2;
+      context.strokeStyle = color;
+      context.strokeRect(px, py, s, s);
+      // el shadow no debe filtrarse a otros dibujos del canvas
+      context.shadowBlur = 0;
+      context.shadowColor = 'transparent';
+      context.globalAlpha = 1;
+    },
+  },
+  pastel: {
+    nombre: 'Pastel',
+    colores: PALETA_PASTEL,
+    colorGrid: '#e8e4f3',
+    colorFondo: '#f5f3fa',
+    dibujarBloque(context, x, y, colorIndex, size, alpha) {
+      const color = this.colores[colorIndex];
+      const px = x * size + 2, py = y * size + 2, s = size - 4, radio = 6;
+      context.globalAlpha = alpha;
+      context.fillStyle = color;
+      context.beginPath();
+      if (typeof context.roundRect === 'function') {
+        context.roundRect(px, py, s, s, radio);
+      } else {
+        // esquinas redondeadas simuladas para contextos sin roundRect
+        context.moveTo(px + radio, py);
+        context.arcTo(px + s, py, px + s, py + s, radio);
+        context.arcTo(px + s, py + s, px, py + s, radio);
+        context.arcTo(px, py + s, px, py, radio);
+        context.arcTo(px, py, px + s, py, radio);
+        context.closePath();
+      }
+      context.fill();
+      context.globalAlpha = 1;
+    },
+  },
+  pixel: {
+    nombre: 'Pixel art',
+    colores: PALETA_PIXEL,
+    colorGrid: '#2a2a2a',
+    colorFondo: '#111111',
+    dibujarBloque(context, x, y, colorIndex, size, alpha) {
+      const color = this.colores[colorIndex];
+      const px = x * size + 1, py = y * size + 1, s = size - 2;
+      context.globalAlpha = alpha;
+      context.fillStyle = color;
+      context.fillRect(px, py, s, s);
+      // textura de dithering en celdas 6x6 con variación de luminancia
+      const celdas = 6;
+      const paso = s / celdas;
+      for (let ry = 0; ry < celdas; ry++) {
+        for (let rx = 0; rx < celdas; rx++) {
+          context.fillStyle = (rx + ry) % 2 === 0 ? aclararColor(color, -20) : aclararColor(color, 20);
+          context.fillRect(px + rx * paso, py + ry * paso, paso, paso);
+        }
+      }
+      // borde duro
+      context.lineWidth = 2;
+      context.strokeStyle = aclararColor(color, -60);
+      context.strokeRect(px, py, s, s);
+      context.globalAlpha = 1;
+    },
+  },
+};
+
+let currentSkin = 'retro';
+try {
+  const skinGuardado = localStorage.getItem('tetris.skin');
+  if (skinGuardado && THEMES[skinGuardado]) currentSkin = skinGuardado;
+} catch (e) {
+  currentSkin = 'retro';
+}
+document.body.setAttribute('data-skin', currentSkin);
+
+const skinSelect = document.getElementById('skin-select');
+skinSelect.value = currentSkin;
+
+skinSelect.addEventListener('change', () => {
+  const elegido = skinSelect.value;
+  currentSkin = THEMES[elegido] ? elegido : 'retro';
+  document.body.setAttribute('data-skin', currentSkin);
+  try {
+    localStorage.setItem('tetris.skin', currentSkin);
+  } catch (e) {
+    // almacenamiento no disponible, se ignora
+  }
+  draw();
+  drawNext();
+  skinSelect.blur();
+});
+
 document.addEventListener('keydown', e => {
+  if (e.target === skinSelect) return; // dejar que el <select> maneje sus propias teclas
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
